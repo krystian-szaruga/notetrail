@@ -83,3 +83,12 @@ Do not commit real secrets; `.env` files are ignored and only `.env.example` is 
 
 Docker image is built by Compose from the root `Dockerfile` (multi-stage, JDK 21 → JRE 21).
 CI (GitHub Actions) runs `./gradlew build` on JDK 21 for pushes to `main` and pull requests.
+
+## Design decisions
+
+| Decision | Why | Rejected |
+| --- | --- | --- |
+| Hexagonal, organized by feature | Core rules stay framework-free, unit tests need no context | Layer-first packages |
+| JJWT 0.12 for tokens | Signing + `exp` validation in a few lines | Nimbus (needs JWK/JWE), Spring Security OAuth2 |
+| Validation: DTO presence, domain invariants, service password policy | One home per rule | All validation in the DTO |
+
