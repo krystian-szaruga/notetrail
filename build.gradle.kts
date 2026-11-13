@@ -1,20 +1,33 @@
 plugins {
-    id("java")
+    java
+    alias(libs.plugins.spring.boot)
+    alias(libs.plugins.spring.dependency.management)
 }
 
 group = "dev.maxaure"
-version = "1.0-SNAPSHOT"
+version = "0.0.1"
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(libs.versions.java.get())
+    }
+}
 
 repositories {
     mavenCentral()
 }
 
 dependencies {
-    testImplementation(platform("org.junit:junit-bom:6.0.0"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
+    implementation(libs.bundles.spring.app)
+    runtimeOnly(libs.mysql.connector.j)
+    testImplementation(libs.spring.boot.starter.test)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
 tasks.test {
     useJUnitPlatform()
+}
+
+tasks.bootJar {
+    archiveFileName = "app.jar"
 }
