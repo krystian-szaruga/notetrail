@@ -20,7 +20,12 @@ repositories {
 dependencies {
     implementation(libs.bundles.spring.app)
     runtimeOnly(libs.mysql.connector.j)
-    testImplementation(libs.spring.boot.starter.test)
+    implementation(libs.spring.security.crypto)
+    implementation(libs.jjwt.api)
+    runtimeOnly(libs.jjwt.impl)
+    runtimeOnly(libs.jjwt.jackson)
+    implementation(libs.bucket4j.core)
+    testImplementation(libs.bundles.testing)
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 

@@ -49,3 +49,4 @@ bin/
 !.env.example
 
 var/
+podman-test.sh
