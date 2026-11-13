@@ -28,3 +28,58 @@ jobs:
 
       - name: Build and test
         run: ./gradlew build --no-daemon
+
+  compose:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Prepare environment
+        working-directory: infra
+        run: |
+          root_password=$(openssl rand -hex 16); echo "::add-mask::$root_password"
+          user_password=$(openssl rand -hex 16); echo "::add-mask::$user_password"
+          jwt_secret=$(openssl rand -hex 32); echo "::add-mask::$jwt_secret"
+          sed \
+            -e "s/^MYSQL_ROOT_PASSWORD=.*/MYSQL_ROOT_PASSWORD=$root_password/" \
+            -e "s/^MYSQL_PASSWORD=.*/MYSQL_PASSWORD=$user_password/" \
+            -e "s/^JWT_SECRET=.*/JWT_SECRET=$jwt_secret/" \
+            .env.example > .env
+
+      - name: Start stack
+        working-directory: infra
+        run: docker compose up -d --build --wait
+
+      - name: Warm up
+        run: |
+          code=""
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/register || true)
+            if [ "$code" = "405" ]; then break; fi
+            sleep 2
+          done
+          test "$code" = "405"
+
+      - name: Smoke test
+        run: |
+          status=$(curl -s -o body.json -w '%{http_code}' -X POST http://localhost:8080/register \
+            -H 'Content-Type: application/json' \
+            -d '{"login":"smoke.user","password":"strong-pass"}')
+          test "$status" = "201"
+          grep -q '"login":"smoke.user"' body.json
+
+          status=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:8080/register \
+            -H 'Content-Type: application/json' \
+            -d '{"login":"smoke.user","password":"strong-pass"}')
+          test "$status" = "409"
+
+      - name: Logs
+        if: failure()
+        working-directory: infra
+        run: docker compose logs
+
+      - name: Stop stack
+        if: always()
+        working-directory: infra
+        run: docker compose down -v
