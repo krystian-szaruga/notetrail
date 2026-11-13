@@ -1,6 +1,8 @@
 package dev.maxaure.notetrail.user.adapter.in.web;
 
-import dev.maxaure.notetrail.user.application.RegisterUserCommand;
+import dev.maxaure.notetrail.user.application.CredentialsCommand;
+import dev.maxaure.notetrail.user.application.IssuedToken;
+import dev.maxaure.notetrail.user.application.port.in.LoginUserUseCase;
 import dev.maxaure.notetrail.user.application.port.in.RegisterUserUseCase;
 import dev.maxaure.notetrail.user.domain.User;
 import jakarta.validation.Valid;
@@ -14,15 +16,23 @@ import org.springframework.web.bind.annotation.RestController;
 class UserController {
 
     private final RegisterUserUseCase registerUser;
+    private final LoginUserUseCase loginUser;
 
-    UserController(RegisterUserUseCase registerUser) {
+    UserController(RegisterUserUseCase registerUser, LoginUserUseCase loginUser) {
         this.registerUser = registerUser;
+        this.loginUser = loginUser;
     }
 
     @PostMapping("/register")
     @ResponseStatus(HttpStatus.CREATED)
-    RegisterResponse register(@Valid @RequestBody RegisterRequest request) {
-        User user = registerUser.register(new RegisterUserCommand(request.login(), request.password()));
+    RegisterResponse register(@Valid @RequestBody CredentialsRequest request) {
+        User user = registerUser.register(new CredentialsCommand(request.login(), request.password()));
         return RegisterResponse.from(user);
+    }
+
+    @PostMapping("/login")
+    LoginResponse login(@Valid @RequestBody CredentialsRequest request) {
+        IssuedToken issuedToken = loginUser.login(new CredentialsCommand(request.login(), request.password()));
+        return LoginResponse.from(issuedToken);
     }
 }

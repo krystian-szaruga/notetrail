@@ -1,7 +1,7 @@
 package dev.maxaure.notetrail.user.application.service;
 
-import dev.maxaure.notetrail.shared.error.ValidationException;
-import dev.maxaure.notetrail.user.application.RegisterUserCommand;
+import dev.maxaure.notetrail.core.error.ValidationException;
+import dev.maxaure.notetrail.user.application.CredentialsCommand;
 import dev.maxaure.notetrail.user.application.port.in.RegisterUserUseCase;
 import dev.maxaure.notetrail.user.application.port.out.PasswordHasher;
 import dev.maxaure.notetrail.user.application.port.out.UserRepository;
@@ -11,7 +11,7 @@ import dev.maxaure.notetrail.user.domain.User;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 
-class RegisterUserService implements RegisterUserUseCase {
+public class RegisterUserService implements RegisterUserUseCase {
 
     private static final int PASSWORD_MIN_LENGTH = 8;
     private static final int PASSWORD_MAX_BYTES = 72;
@@ -20,14 +20,14 @@ class RegisterUserService implements RegisterUserUseCase {
     private final PasswordHasher passwordHasher;
     private final Clock clock;
 
-    RegisterUserService(UserRepository userRepository, PasswordHasher passwordHasher, Clock clock) {
+    public RegisterUserService(UserRepository userRepository, PasswordHasher passwordHasher, Clock clock) {
         this.userRepository = userRepository;
         this.passwordHasher = passwordHasher;
         this.clock = clock;
     }
 
     @Override
-    public User register(RegisterUserCommand command) {
+    public User register(CredentialsCommand command) {
         PasswordHash passwordHash = passwordHasher.hash(requireStrongPassword(command.rawPassword()));
         User user = User.create(command.login(), passwordHash, clock.instant());
         return userRepository.save(user);

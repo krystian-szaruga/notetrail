@@ -16,9 +16,12 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@SpringBootTest(
+        webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
+        properties = "app.jwt.secret=test-secret-test-secret-test-secret-32"
+)
 @Testcontainers
-class RegisterUserIntegrationTest {
+class UserIntegrationTest {
 
     @Container
     @ServiceConnection
@@ -65,5 +68,29 @@ class RegisterUserIntegrationTest {
         );
 
         assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+    }
+
+    @Test
+    void whenSixthLoginAttemptComesThenClientGetsTooManyRequests() {
+        for (int attempt = 1; attempt <= 5; attempt++) {
+            ResponseEntity<String> response = restTemplate.postForEntity(
+                    "/login",
+                    Map.of("login", "nobody", "password", "wrong-pass"),
+                    String.class
+            );
+
+            assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+        }
+
+        ResponseEntity<String> response = restTemplate.postForEntity(
+                "/login",
+                Map.of("login", "nobody", "password", "wrong-pass"),
+                String.class
+        );
+
+        assertEquals(HttpStatus.TOO_MANY_REQUESTS, response.getStatusCode());
+        String retryAfter = response.getHeaders().getFirst("Retry-After");
+        assertNotNull(retryAfter);
+        assertTrue(Long.parseLong(retryAfter) > 0);
     }
 }

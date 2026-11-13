@@ -1,6 +1,6 @@
 package dev.maxaure.notetrail.user.adapter.out.persistence;
 
-import dev.maxaure.notetrail.shared.error.LoginAlreadyTakenException;
+import dev.maxaure.notetrail.user.domain.error.LoginAlreadyTakenException;
 import dev.maxaure.notetrail.user.application.port.out.UserRepository;
 import dev.maxaure.notetrail.user.domain.User;
 import org.springframework.dao.DataIntegrityViolationException;
