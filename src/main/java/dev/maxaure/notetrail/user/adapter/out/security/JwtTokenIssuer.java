@@ -4,10 +4,8 @@ import dev.maxaure.notetrail.user.application.IssuedToken;
 import dev.maxaure.notetrail.user.application.port.out.TokenIssuer;
 import dev.maxaure.notetrail.user.domain.User;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.security.Keys;
 
 import javax.crypto.SecretKey;
-import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
@@ -19,8 +17,8 @@ class JwtTokenIssuer implements TokenIssuer {
     private final Duration ttl;
     private final Clock clock;
 
-    JwtTokenIssuer(String secret, Duration ttl, Clock clock) {
-        this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
+    JwtTokenIssuer(SecretKey key, Duration ttl, Clock clock) {
+        this.key = key;
         this.ttl = ttl;
         this.clock = clock;
     }

@@ -1,12 +1,11 @@
 package dev.maxaure.notetrail.bootstrap;
 
 import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
 
 import java.time.Clock;
 
-@Configuration
-class ClockConfiguration {
+@org.springframework.context.annotation.Configuration
+class Configuration {
 
     @Bean
     Clock clock() {
