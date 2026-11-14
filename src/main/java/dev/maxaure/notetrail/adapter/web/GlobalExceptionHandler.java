@@ -1,6 +1,8 @@
 package dev.maxaure.notetrail.adapter.web;
 
 import dev.maxaure.notetrail.core.error.ConflictException;
+import dev.maxaure.notetrail.core.error.ForbiddenException;
+import dev.maxaure.notetrail.core.error.NotFoundException;
 import dev.maxaure.notetrail.core.error.UnauthorizedException;
 import dev.maxaure.notetrail.core.error.ValidationException;
 import org.springframework.http.HttpStatus;
@@ -29,6 +31,16 @@ class GlobalExceptionHandler {
     @ExceptionHandler(ConflictException.class)
     ProblemDetail onConflict(ConflictException exception) {
         return problem(HttpStatus.CONFLICT, exception.getMessage());
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    ProblemDetail onForbidden(ForbiddenException exception) {
+        return problem(HttpStatus.FORBIDDEN, exception.getMessage());
+    }
+
+    @ExceptionHandler(NotFoundException.class)
+    ProblemDetail onNotFound(NotFoundException exception) {
+        return problem(HttpStatus.NOT_FOUND, exception.getMessage());
     }
 
     @ExceptionHandler(UnauthorizedException.class)

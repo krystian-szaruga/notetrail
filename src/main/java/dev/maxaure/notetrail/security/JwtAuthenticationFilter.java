@@ -50,7 +50,9 @@ class JwtAuthenticationFilter extends OncePerRequestFilter {
         try {
             AuthenticatedUser user = verifier.verify(token);
             request.setAttribute(USER_ATTRIBUTE, user);
-            chain.doFilter(request, response);
+            try (var ignored = CurrentUser.open(user)) {
+                chain.doFilter(request, response);
+            }
         } catch (UnauthorizedException e) {
             writeUnauthorized(response, e.getMessage());
         }
