@@ -18,7 +18,7 @@ class UserPersistenceAdapter implements UserRepository {
     @Override
     public User save(User user) {
         try {
-            return repository.save(UserJpaEntity.from(user)).toDomain();
+            return repository.saveAndFlush(UserJpaEntity.from(user)).toDomain();
         } catch (DataIntegrityViolationException exception) {
             throw new LoginAlreadyTakenException(user.login());
         }
