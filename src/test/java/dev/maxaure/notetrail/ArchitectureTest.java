@@ -98,6 +98,26 @@ class ArchitectureTest {
             );
 
     @ArchTest
+    static final ArchRule itemAndUserAreIndependent = noClasses()
+            .that().resideInAPackage("..item..")
+            .should().dependOnClassesThat().resideInAnyPackage("..user..");
+
+    @ArchTest
+    static final ArchRule userAndItemAreIndependent = noClasses()
+            .that().resideInAPackage("..user..")
+            .should().dependOnClassesThat().resideInAnyPackage("..item..");
+
+    @ArchTest
+    static final ArchRule securityDependsOnlyOnCore = noClasses()
+            .that().resideInAPackage("dev.maxaure.notetrail.security..")
+            .should().dependOnClassesThat().resideInAnyPackage(
+                    "..user..",
+                    "..item..",
+                    "..adapter..",
+                    "..bootstrap.."
+            );
+
+    @ArchTest
     static final ArchRule applicationDependsOnlyOnCoreDomainAndItself = noClasses()
             .that().resideInAPackage("..application..")
             .should().dependOnClassesThat().resideOutsideOfPackages(

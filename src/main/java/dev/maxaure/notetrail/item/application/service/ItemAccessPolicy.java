@@ -9,11 +9,11 @@ import dev.maxaure.notetrail.item.domain.ItemRole;
 import java.util.Optional;
 import java.util.UUID;
 
-final class ItemAccessPolicy {
+public final class ItemAccessPolicy {
 
     private final ItemPermissionRepository permissionRepository;
 
-    ItemAccessPolicy(ItemPermissionRepository permissionRepository) {
+    public ItemAccessPolicy(ItemPermissionRepository permissionRepository) {
         this.permissionRepository = permissionRepository;
     }
 

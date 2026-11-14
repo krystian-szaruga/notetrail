@@ -92,4 +92,5 @@ CI (GitHub Actions) runs `./gradlew build` on JDK 21 for pushes to `main` and pu
 | JJWT 0.12 for tokens | Signing + `exp` validation in a few lines | Nimbus (needs JWK/JWE), Spring Security OAuth2 |
 | Validation: DTO presence, domain invariants, service password policy | One home per rule | All validation in the DTO |
 | No explicit transaction boundary in services | Every operation ends with a single write, so the repository call provides the transaction. A check-then-write race is caught by `@Version` (409) and `unique(item_id, user_id)`. | A custom `TransactionRunner` port with a `TransactionTemplate` adapter adds an abstraction that buys nothing while every business operation is a single write. |
+| Explicit `deleted = false` in item queries | `@Query` JPQL in `ItemJpaRepository` keeps the soft-delete filter visible in the code | Derived method names (`...AndDeletedFalse`) hide the filter behind name parsing |
 
