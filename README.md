@@ -5,9 +5,22 @@ Backend for a notes system.
 ## Requirements
 
 - JDK 21
-- Podman or Docker with Compose
+- Podman or Docker with Compose (also required by `./gradlew build`: integration tests start MySQL via Testcontainers)
 
 ## Running
+
+### Secrets
+
+Copy the example environment file and replace the defaults. `JWT_SECRET` must be at least 32 bytes for HS256, otherwise the application will not start:
+
+```bash
+cd infra
+cp .env.example .env
+openssl rand -hex 32
+openssl rand -hex 16
+```
+
+Use the first value for `JWT_SECRET` and the second for both `MYSQL_ROOT_PASSWORD` and `MYSQL_PASSWORD`.
 
 ### Full stack (database + API)
 
@@ -34,8 +47,9 @@ The API can then run locally (e.g. from IntelliJ) against `localhost:3306`.
 ```
 
 The data source is read from `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER` and
-`DB_PASSWORD`. When running from IntelliJ, set these as environment variables in
-the run configuration.
+`DB_PASSWORD`, and tokens are signed with `JWT_SECRET` (at least 32 bytes). When
+running from IntelliJ, set these as environment variables in the run
+configuration.
 
 ### Stopping
 
@@ -55,8 +69,7 @@ cd infra
 podman-compose logs -f api
 ```
 
-The project is developed on Podman — the author does not use Docker. The same
-`infra/docker-compose.yml` works with both.
+Developed on Podman; the same `infra/docker-compose.yml` works with both.
 
 ## API
 
@@ -71,7 +84,7 @@ All endpoints except `/register` and `/login` require `Authorization: Bearer <to
 | `PATCH` | `/items/{id}` | Edit title/content with `version` (200, 400, 403, 404, 409 with current `version`) |
 | `DELETE` | `/items/{id}` | Soft delete, owner only (204, 403, 404) |
 | `GET` | `/items/{id}/history` | Envers revision history (200, 403, 404) |
-| `POST` | `/items/{id}/share` | Grant `VIEWER`/`EDITOR`, owner only (201 new, 200 updated, 400, 403, 404) |
+| `POST` | `/items/{id}/share` | Grant `VIEWER`/`EDITOR`, owner only (201 new, 200 updated, 400, 403, 404, 409 when two first shares for the same user race) |
 | `DELETE` | `/items/{id}/share/{userId}` | Revoke access, owner only (204, 403, 404) |
 
 ## Configuration
@@ -112,7 +125,7 @@ Do not commit real secrets; `.env` files are ignored and only `.env.example` is 
 ```
 
 Docker image is built by Compose from the root `Dockerfile` (multi-stage, JDK 21 → JRE 21).
-CI (GitHub Actions) runs `./gradlew build` on JDK 21 for pushes to `main` and pull requests.
+CI (GitHub Actions) runs `./gradlew build` on JDK 21 and, in a separate `compose` job, starts the full stack with Docker Compose and runs `.github/scripts/smoke-test.sh` against it, on pushes to `main` and on pull requests.
 
 ## Architecture
 
@@ -167,10 +180,10 @@ If `item` ever has to react to changes in `user` (for example account deletion),
 | JJWT 0.12 for tokens | Signing + `exp` validation in a few lines | Nimbus (needs JWK/JWE), Spring Security OAuth2 |
 | Validation: DTO presence, domain invariants, service password policy | One home per rule | All validation in the DTO |
 | No explicit transaction boundary in services | Every operation ends with a single write, so the repository call provides the transaction. A check-then-write race is caught by `@Version` (409) and `unique(item_id, user_id)`. | A custom `TransactionRunner` port with a `TransactionTemplate` adapter adds an abstraction that buys nothing while every business operation is a single write. |
+| Concurrent first share returns 409 | Two simultaneous first shares for the same user both see no permission, and the second insert hits `unique(item_id, user_id)`. The adapter maps the violation to `ConflictException` (409, "retry"). This relies on the share flow having no surrounding transaction (see the previous row). | Re-reading the row and updating its role, which would turn the loser into a 200 but adds code the spec does not require |
 | Explicit `deleted = false` in item queries | `@Query` JPQL in `ItemJpaRepository` keeps the soft-delete filter visible in the code | Derived method names (`...AndDeletedFalse`) hide the filter behind name parsing |
 | Soft delete is audited as `MOD` | Setting `deleted = true` is a normal Hibernate update, so Envers records `MOD` and the content history stays complete | Physical delete (`DEL`), `@SQLDelete` / native updates that bypass Envers |
-| 404 before 403 | The item is loaded first (`deleted = false`), then permissions are checked, so a deleted or missing item is reported as missing and an existing foreign item as forbidden | Checking ownership first, which leaks whether an item exists |
-| In-memory rate limiter | Bucket4j token bucket per instance, no external store, configuration via `LOGIN_RATE_LIMIT` | Redis-backed buckets (the task forbids Redis; a single instance needs no shared store) |
+| 404 before 403 | The spec requires 404 for missing or deleted items and 403 for foreign ones. The item is loaded first (`deleted = false`), then permissions are checked. This reveals that a foreign item exists, which is accepted because ids are random UUIDs. | Returning 404 for foreign items as well (hides existence, but contradicts the spec) || In-memory rate limiter | Bucket4j token bucket per instance, no external store, configuration via `LOGIN_RATE_LIMIT` | Redis-backed buckets (the task forbids Redis; a single instance needs no shared store) |
 | `ddl-auto=update` instead of Flyway | Envers generates the `*_aud` tables automatically; the task forbids writing them by hand | Flyway with `validate` would require hand-written audit DDL |
 
 ## License

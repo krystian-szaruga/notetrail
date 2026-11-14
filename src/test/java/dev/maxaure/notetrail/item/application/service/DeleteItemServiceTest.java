@@ -37,7 +37,8 @@ class DeleteItemServiceTest {
     @Test
     void whenOwnerDeletesThenItemIsSoftDeleted() {
         givenItem();
-        when(itemRepository.save(any(Item.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(itemRepository.save(any(Item.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
 
         service.delete(ITEM_ID, OWNER_ID);
 
@@ -63,7 +64,16 @@ class DeleteItemServiceTest {
     }
 
     private void givenItem() {
-        Item item = new Item(ITEM_ID, OWNER_ID, "title", "content", 0, false, CREATED_AT, CREATED_AT);
+        Item item = new Item(
+                ITEM_ID,
+                OWNER_ID,
+                "title",
+                "content",
+                0,
+                false,
+                CREATED_AT,
+                CREATED_AT
+        );
         when(itemRepository.findById(ITEM_ID)).thenReturn(Optional.of(item));
     }
 }
