@@ -74,4 +74,4 @@ jobs:
       - name: Stop stack
         if: always()
         working-directory: infra
-        run: docker compose down -v.
+        run: docker compose down -v
