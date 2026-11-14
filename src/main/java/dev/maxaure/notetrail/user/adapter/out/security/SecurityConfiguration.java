@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
+import javax.crypto.SecretKey;
 import java.time.Clock;
 import java.time.Duration;
 
@@ -21,10 +22,10 @@ class SecurityConfiguration {
 
     @Bean
     TokenIssuer tokenIssuer(
-            @Value("${app.jwt.secret}") String secret,
+            SecretKey jwtSecretKey,
             @Value("${app.jwt.ttl-seconds:3600}") long ttlSeconds,
             Clock clock
     ) {
-        return new JwtTokenIssuer(secret, Duration.ofSeconds(ttlSeconds), clock);
+        return new JwtTokenIssuer(jwtSecretKey, Duration.ofSeconds(ttlSeconds), clock);
     }
 }
