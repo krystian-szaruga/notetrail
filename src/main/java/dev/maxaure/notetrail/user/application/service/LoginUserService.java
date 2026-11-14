@@ -7,7 +7,11 @@ import dev.maxaure.notetrail.user.application.port.in.LoginUserUseCase;
 import dev.maxaure.notetrail.user.application.port.out.PasswordHasher;
 import dev.maxaure.notetrail.user.application.port.out.TokenIssuer;
 import dev.maxaure.notetrail.user.application.port.out.UserRepository;
+import dev.maxaure.notetrail.user.domain.PasswordHash;
 import dev.maxaure.notetrail.user.domain.User;
+
+import java.util.Optional;
+import java.util.UUID;
 
 public class LoginUserService implements LoginUserUseCase {
 
@@ -16,20 +20,27 @@ public class LoginUserService implements LoginUserUseCase {
     private final UserRepository userRepository;
     private final PasswordHasher passwordHasher;
     private final TokenIssuer tokenIssuer;
+    private final PasswordHash dummyHash;
 
     public LoginUserService(UserRepository userRepository, PasswordHasher passwordHasher, TokenIssuer tokenIssuer) {
         this.userRepository = userRepository;
         this.passwordHasher = passwordHasher;
         this.tokenIssuer = tokenIssuer;
+        this.dummyHash = passwordHasher.hash(UUID.randomUUID().toString());
     }
 
     @Override
     public IssuedToken login(CredentialsCommand command) {
-        User user = userRepository.findByLogin(command.login().trim())
-                .orElseThrow(() -> new UnauthorizedException(INVALID_CREDENTIALS));
-        if (!passwordHasher.matches(command.rawPassword(), user.passwordHash())) {
+        String rawPassword = command.rawPassword();
+        if (rawPassword == null || PasswordPolicy.isTooLong(rawPassword)) {
             throw new UnauthorizedException(INVALID_CREDENTIALS);
         }
-        return tokenIssuer.issue(user);
+        Optional<User> user = userRepository.findByLogin(command.login().trim());
+        PasswordHash stored = user.map(User::passwordHash).orElse(dummyHash);
+        boolean matches = passwordHasher.matches(rawPassword, stored);
+        if (user.isEmpty() || !matches) {
+            throw new UnauthorizedException(INVALID_CREDENTIALS);
+        }
+        return tokenIssuer.issue(user.get());
     }
 }

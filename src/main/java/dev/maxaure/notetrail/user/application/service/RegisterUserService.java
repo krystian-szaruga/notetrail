@@ -13,9 +13,6 @@ import java.time.Clock;
 
 public class RegisterUserService implements RegisterUserUseCase {
 
-    private static final int PASSWORD_MIN_LENGTH = 8;
-    private static final int PASSWORD_MAX_BYTES = 72;
-
     private final UserRepository userRepository;
     private final PasswordHasher passwordHasher;
     private final Clock clock;
@@ -28,17 +25,18 @@ public class RegisterUserService implements RegisterUserUseCase {
 
     @Override
     public User register(CredentialsCommand command) {
-        PasswordHash passwordHash = passwordHasher.hash(requireStrongPassword(command.rawPassword()));
+        String rawPassword = requireValidPassword(command.rawPassword());
+        PasswordHash passwordHash = passwordHasher.hash(rawPassword);
         User user = User.create(command.login(), passwordHash, clock.instant());
         return userRepository.save(user);
     }
 
-    private static String requireStrongPassword(String rawPassword) {
-        if (rawPassword == null || rawPassword.length() < PASSWORD_MIN_LENGTH) {
-            throw new ValidationException("password must be at least " + PASSWORD_MIN_LENGTH + " characters");
+    private static String requireValidPassword(String rawPassword) {
+        if (rawPassword == null || PasswordPolicy.isTooShort(rawPassword)) {
+            throw new ValidationException("password must be at least " + PasswordPolicy.MIN_LENGTH + " characters");
         }
-        if (rawPassword.getBytes(StandardCharsets.UTF_8).length > PASSWORD_MAX_BYTES) {
-            throw new ValidationException("password must be at most " + PASSWORD_MAX_BYTES + " bytes");
+        if (PasswordPolicy.isTooLong(rawPassword)) {
+            throw new ValidationException("password must be at most " + PasswordPolicy.MAX_BYTES + " bytes");
         }
         return rawPassword;
     }
