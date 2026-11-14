@@ -1,4 +1,4 @@
-package dev.maxaure.notetrail.shared.config;
+package dev.maxaure.notetrail.bootstrap;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;

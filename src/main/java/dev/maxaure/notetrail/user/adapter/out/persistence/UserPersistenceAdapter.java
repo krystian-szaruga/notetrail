@@ -1,6 +1,6 @@
 package dev.maxaure.notetrail.user.adapter.out.persistence;
 
-import dev.maxaure.notetrail.shared.error.LoginAlreadyTakenException;
+import dev.maxaure.notetrail.user.domain.error.LoginAlreadyTakenException;
 import dev.maxaure.notetrail.user.application.port.out.UserRepository;
 import dev.maxaure.notetrail.user.domain.User;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -18,7 +18,7 @@ class UserPersistenceAdapter implements UserRepository {
     @Override
     public User save(User user) {
         try {
-            return repository.save(UserJpaEntity.from(user)).toDomain();
+            return repository.saveAndFlush(UserJpaEntity.from(user)).toDomain();
         } catch (DataIntegrityViolationException exception) {
             throw new LoginAlreadyTakenException(user.login());
         }

@@ -1,4 +1,4 @@
-package dev.maxaure.notetrail.shared.error;
+package dev.maxaure.notetrail.core.error;
 
 public class ValidationException extends RuntimeException {
 

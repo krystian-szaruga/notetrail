@@ -1,8 +1,8 @@
-package dev.maxaure.notetrail.shared.web;
+package dev.maxaure.notetrail.adapter.web;
 
-import dev.maxaure.notetrail.shared.error.ConflictException;
-import dev.maxaure.notetrail.shared.error.UnauthorizedException;
-import dev.maxaure.notetrail.shared.error.ValidationException;
+import dev.maxaure.notetrail.core.error.ConflictException;
+import dev.maxaure.notetrail.core.error.UnauthorizedException;
+import dev.maxaure.notetrail.core.error.ValidationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
 @RestControllerAdvice
-public class GlobalExceptionHandler {
+class GlobalExceptionHandler {
 
     @ExceptionHandler(ValidationException.class)
     ProblemDetail onValidation(ValidationException exception) {

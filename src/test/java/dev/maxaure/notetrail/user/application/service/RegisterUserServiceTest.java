@@ -1,7 +1,7 @@
 package dev.maxaure.notetrail.user.application.service;
 
-import dev.maxaure.notetrail.shared.error.ValidationException;
-import dev.maxaure.notetrail.user.application.RegisterUserCommand;
+import dev.maxaure.notetrail.core.error.ValidationException;
+import dev.maxaure.notetrail.user.application.CredentialsCommand;
 import dev.maxaure.notetrail.user.application.port.out.PasswordHasher;
 import dev.maxaure.notetrail.user.application.port.out.UserRepository;
 import dev.maxaure.notetrail.user.domain.PasswordHash;
@@ -32,7 +32,7 @@ class RegisterUserServiceTest {
 
     @Test
     void whenPasswordIsShorterThanEightCharactersThenNothingIsSaved() {
-        RegisterUserCommand command = new RegisterUserCommand("jan.kowalski", "short");
+        CredentialsCommand command = new CredentialsCommand("jan.kowalski", "short");
         assertThrows(ValidationException.class, () -> service.register(command));
         verifyNoInteractions(userRepository, passwordHasher);
     }
@@ -42,14 +42,14 @@ class RegisterUserServiceTest {
         when(passwordHasher.hash("exactly8")).thenReturn(HASH);
         when(userRepository.save(any(User.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
-        User saved = service.register(new RegisterUserCommand("jan.kowalski", "exactly8"));
+        User saved = service.register(new CredentialsCommand("jan.kowalski", "exactly8"));
         assertEquals(HASH, saved.passwordHash());
         verify(userRepository).save(saved);
     }
 
     @Test
     void whenPasswordExceedsSeventyTwoBytesThenNothingIsSaved() {
-        RegisterUserCommand command = new RegisterUserCommand("jan.kowalski", "a".repeat(73));
+        CredentialsCommand command = new CredentialsCommand("jan.kowalski", "a".repeat(73));
         assertThrows(ValidationException.class, () -> service.register(command));
         verifyNoInteractions(userRepository, passwordHasher);
     }
@@ -57,7 +57,7 @@ class RegisterUserServiceTest {
     @Test
     void whenPasswordExceedsSeventyTwoBytesInUtf8ThenNothingIsSaved() {
         String password = "ł".repeat(37);
-        RegisterUserCommand command = new RegisterUserCommand("jan.kowalski", password);
+        CredentialsCommand command = new CredentialsCommand("jan.kowalski", password);
         assertThrows(ValidationException.class, () -> service.register(command));
         verifyNoInteractions(userRepository, passwordHasher);
     }
@@ -68,7 +68,7 @@ class RegisterUserServiceTest {
         when(passwordHasher.hash(password)).thenReturn(HASH);
         when(userRepository.save(any(User.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
-        User saved = service.register(new RegisterUserCommand("jan.kowalski", password));
+        User saved = service.register(new CredentialsCommand("jan.kowalski", password));
         assertEquals(HASH, saved.passwordHash());
     }
 
@@ -77,7 +77,7 @@ class RegisterUserServiceTest {
         when(passwordHasher.hash("strong-pass")).thenReturn(HASH);
         when(userRepository.save(any(User.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
-        User saved = service.register(new RegisterUserCommand("  jan.kowalski  ", "strong-pass"));
+        User saved = service.register(new CredentialsCommand("  jan.kowalski  ", "strong-pass"));
         assertNotNull(saved.id());
         assertEquals("jan.kowalski", saved.login());
         assertEquals(HASH, saved.passwordHash());

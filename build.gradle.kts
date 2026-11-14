@@ -18,6 +18,7 @@ repositories {
 }
 
 dependencies {
+    implementation(libs.caffeine)
     implementation(libs.bundles.spring.app)
     runtimeOnly(libs.mysql.connector.j)
     implementation(libs.spring.security.crypto)

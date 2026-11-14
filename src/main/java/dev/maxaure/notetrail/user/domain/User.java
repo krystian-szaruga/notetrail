@@ -1,6 +1,6 @@
 package dev.maxaure.notetrail.user.domain;
 
-import dev.maxaure.notetrail.shared.error.ValidationException;
+import dev.maxaure.notetrail.core.error.ValidationException;
 
 import java.time.Instant;
 import java.util.Objects;
