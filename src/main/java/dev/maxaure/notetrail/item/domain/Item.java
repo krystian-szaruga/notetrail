@@ -43,6 +43,10 @@ public record Item(
         return version == expectedVersion;
     }
 
+    public boolean isOwnedBy(UUID userId) {
+        return ownerId.equals(userId);
+    }
+
     private static String normalizeTitle(String title) {
         String trimmed = Objects.requireNonNull(title, "title is required").trim();
         if (trimmed.isEmpty() || trimmed.length() > TITLE_MAX_LENGTH) {
