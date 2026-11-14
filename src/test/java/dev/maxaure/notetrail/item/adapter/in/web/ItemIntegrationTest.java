@@ -1,17 +1,12 @@
 package dev.maxaure.notetrail.item.adapter.in.web;
 
+import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
-import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
+import org.springframework.http.*;
 import org.testcontainers.containers.MySQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
@@ -19,12 +14,12 @@ import org.testcontainers.junit.jupiter.Testcontainers;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.*;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(
         webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT,
@@ -65,7 +60,11 @@ class ItemIntegrationTest {
         Session alice = registerAndLogin(uniqueLogin("alice"));
         ItemBody item = createItem(alice.token(), "pierwsza");
 
-        ItemBody firstEdit = patch(alice.token(), item.id(), Map.of("title", "druga", "version", 0)).getBody();
+        ItemBody firstEdit = patch(
+                alice.token(),
+                item.id(),
+                Map.of("title", "druga", "version", 0)
+        ).getBody();
         assertNotNull(firstEdit);
         assertEquals(1, firstEdit.version());
 
@@ -87,7 +86,8 @@ class ItemIntegrationTest {
         assertEquals("MOD", revisions[2].revisionType());
         assertEquals("druga", revisions[2].title());
         assertEquals("nowa treść", revisions[2].content());
-        Arrays.stream(revisions).forEach(revision -> assertEquals(alice.login(), revision.changedBy()));
+        Arrays.stream(revisions)
+                .forEach(revision -> assertEquals(alice.login(), revision.changedBy()));
     }
 
     @Test
@@ -99,7 +99,10 @@ class ItemIntegrationTest {
         ResponseEntity<ProblemBody> response = restTemplate.exchange(
                 "/items/" + item.id(),
                 HttpMethod.PATCH,
-                new HttpEntity<>(Map.of("title", "trzecia", "version", 0), authHeaders(alice.token())),
+                new HttpEntity<>(
+                        Map.of("title", "trzecia", "version", 0),
+                        authHeaders(alice.token())
+                ),
                 ProblemBody.class
         );
 
@@ -113,16 +116,32 @@ class ItemIntegrationTest {
         Session alice = registerAndLogin(uniqueLogin("alice"));
         ItemBody item = createItem(alice.token(), "do usunięcia");
 
-        assertEquals(HttpStatus.NO_CONTENT, delete(alice.token(), item.id()).getStatusCode());
+        assertEquals(
+                HttpStatus.NO_CONTENT,
+                delete(alice.token(), item.id()).getStatusCode()
+        );
         assertFalse(listContains(alice.token(), item.id()));
-        assertEquals(HttpStatus.NOT_FOUND, patch(alice.token(), item.id(), Map.of("title", "po", "version", 1)).getStatusCode());
+        assertEquals(
+                HttpStatus.NOT_FOUND,
+                patch(
+                        alice.token(),
+                        item.id(),
+                        Map.of("title", "po", "version", 1)
+                ).getStatusCode()
+        );
         assertEquals(HttpStatus.NOT_FOUND, historyStatus(alice.token(), item.id()));
-        assertEquals(HttpStatus.NOT_FOUND, delete(alice.token(), item.id()).getStatusCode());
+        assertEquals(
+                HttpStatus.NOT_FOUND,
+                delete(alice.token(), item.id()).getStatusCode()
+        );
     }
 
     @Test
     void whenRequestHasNoTokenThenUnauthorizedIsReturned() {
-        assertEquals(HttpStatus.UNAUTHORIZED, restTemplate.getForEntity("/items", String.class).getStatusCode());
+        assertEquals(
+                HttpStatus.UNAUTHORIZED,
+                restTemplate.getForEntity("/items", String.class).getStatusCode()
+        );
     }
 
     @Test
@@ -131,11 +150,27 @@ class ItemIntegrationTest {
         Session bob = registerAndLogin(uniqueLogin("bob"));
         ItemBody item = createItem(alice.token(), "prywatna");
 
-        assertEquals(HttpStatus.FORBIDDEN, patch(bob.token(), item.id(), Map.of("title", "hack", "version", 0)).getStatusCode());
-        assertEquals(HttpStatus.FORBIDDEN, delete(bob.token(), item.id()).getStatusCode());
+        assertEquals(
+                HttpStatus.FORBIDDEN,
+                patch(
+                        bob.token(),
+                        item.id(),
+                        Map.of("title", "hack", "version", 0)
+                ).getStatusCode()
+        );
+        assertEquals(
+                HttpStatus.FORBIDDEN,
+                delete(bob.token(), item.id()).getStatusCode()
+        );
         assertEquals(HttpStatus.FORBIDDEN, historyStatus(bob.token(), item.id()));
-        assertEquals(HttpStatus.FORBIDDEN, share(bob.token(), item.id(), bob.id(), "VIEWER").getStatusCode());
-        assertEquals(HttpStatus.FORBIDDEN, revoke(bob.token(), item.id(), bob.id()).getStatusCode());
+        assertEquals(
+                HttpStatus.FORBIDDEN,
+                share(bob.token(), item.id(), bob.id(), "VIEWER").getStatusCode()
+        );
+        assertEquals(
+                HttpStatus.FORBIDDEN,
+                revoke(bob.token(), item.id(), bob.id()).getStatusCode()
+        );
     }
 
     @Test
@@ -152,7 +187,9 @@ class ItemIntegrationTest {
         ItemSummaryBody summary = findInList(bob.token(), item.id());
         assertEquals("EDITOR", summary.myRole());
 
-        assertEquals(HttpStatus.OK, patch(bob.token(), item.id(), Map.of("content", "edit by bob", "version", 0)).getStatusCode());
+        assertEquals(HttpStatus.OK, patch(bob.token(), item.id(), Map.of(
+                "content", "edit by bob", "version", 0)).getStatusCode()
+        );
 
         HistoryBody[] revisions = history(bob.token(), item.id()).getBody();
         assertNotNull(revisions);
@@ -166,10 +203,20 @@ class ItemIntegrationTest {
         Session bob = registerAndLogin(uniqueLogin("bob"));
         ItemBody item = createItem(alice.token(), "wspólna");
 
-        ShareBody first = share(alice.token(), item.id(), bob.id(), "VIEWER").getBody();
+        ShareBody first = share(
+                alice.token(),
+                item.id(),
+                bob.id(),
+                "VIEWER"
+        ).getBody();
         assertNotNull(first);
 
-        ResponseEntity<ShareBody> response = share(alice.token(), item.id(), bob.id(), "EDITOR");
+        ResponseEntity<ShareBody> response = share(
+                alice.token(),
+                item.id(),
+                bob.id(),
+                "EDITOR"
+        );
 
         assertEquals(HttpStatus.OK, response.getStatusCode());
         assertNotNull(response.getBody());
@@ -185,7 +232,15 @@ class ItemIntegrationTest {
         Session alice = registerAndLogin(uniqueLogin("alice"));
         ItemBody item = createItem(alice.token(), "wspólna");
 
-        assertEquals(HttpStatus.BAD_REQUEST, share(alice.token(), item.id(), alice.id(), "VIEWER").getStatusCode());
+        assertEquals(
+                HttpStatus.BAD_REQUEST,
+                share(
+                        alice.token(),
+                        item.id(),
+                        alice.id(),
+                        "VIEWER"
+                ).getStatusCode()
+        );
     }
 
     @Test
@@ -194,7 +249,15 @@ class ItemIntegrationTest {
         Session bob = registerAndLogin(uniqueLogin("bob"));
         ItemBody item = createItem(alice.token(), "wspólna");
 
-        assertEquals(HttpStatus.BAD_REQUEST, share(alice.token(), item.id(), bob.id(), "OWNER").getStatusCode());
+        assertEquals(
+                HttpStatus.BAD_REQUEST,
+                share(
+                        alice.token(),
+                        item.id(),
+                        bob.id(),
+                        "OWNER"
+                ).getStatusCode()
+        );
     }
 
     @Test
@@ -202,7 +265,15 @@ class ItemIntegrationTest {
         Session alice = registerAndLogin(uniqueLogin("alice"));
         ItemBody item = createItem(alice.token(), "wspólna");
 
-        assertEquals(HttpStatus.NOT_FOUND, share(alice.token(), item.id(), UUID.randomUUID(), "VIEWER").getStatusCode());
+        assertEquals(
+                HttpStatus.NOT_FOUND,
+                share(
+                        alice.token(),
+                        item.id(),
+                        UUID.randomUUID(),
+                        "VIEWER"
+                ).getStatusCode()
+        );
     }
 
     @Test
@@ -211,13 +282,29 @@ class ItemIntegrationTest {
         Session bob = registerAndLogin(uniqueLogin("bob"));
         ItemBody item = createItem(alice.token(), "tylko odczyt");
 
-        assertEquals(HttpStatus.CREATED, share(alice.token(), item.id(), bob.id(), "VIEWER").getStatusCode());
+        assertEquals(
+                HttpStatus.CREATED,
+                share(alice.token(), item.id(), bob.id(), "VIEWER").getStatusCode()
+        );
 
         assertEquals("VIEWER", findInList(bob.token(), item.id()).myRole());
         assertEquals(HttpStatus.OK, history(bob.token(), item.id()).getStatusCode());
-        assertEquals(HttpStatus.FORBIDDEN, patch(bob.token(), item.id(), Map.of("title", "hack", "version", 0)).getStatusCode());
-        assertEquals(HttpStatus.FORBIDDEN, delete(bob.token(), item.id()).getStatusCode());
-        assertEquals(HttpStatus.FORBIDDEN, share(bob.token(), item.id(), bob.id(), "EDITOR").getStatusCode());
+        assertEquals(
+                HttpStatus.FORBIDDEN,
+                patch(
+                        bob.token(),
+                        item.id(),
+                        Map.of("title", "hack", "version", 0)
+                ).getStatusCode()
+        );
+        assertEquals(
+                HttpStatus.FORBIDDEN,
+                delete(bob.token(), item.id()).getStatusCode()
+        );
+        assertEquals(
+                HttpStatus.FORBIDDEN,
+                share(bob.token(), item.id(), bob.id(), "EDITOR").getStatusCode()
+        );
     }
 
     @Test
@@ -228,10 +315,23 @@ class ItemIntegrationTest {
 
         share(alice.token(), item.id(), bob.id(), "EDITOR");
 
-        assertEquals(HttpStatus.NO_CONTENT, revoke(alice.token(), item.id(), bob.id()).getStatusCode());
+        assertEquals(
+                HttpStatus.NO_CONTENT,
+                revoke(alice.token(), item.id(), bob.id()).getStatusCode()
+        );
         assertFalse(listContains(bob.token(), item.id()));
-        assertEquals(HttpStatus.FORBIDDEN, patch(bob.token(), item.id(), Map.of("title", "po", "version", 0)).getStatusCode());
-        assertEquals(HttpStatus.NOT_FOUND, revoke(alice.token(), item.id(), bob.id()).getStatusCode());
+        assertEquals(
+                HttpStatus.FORBIDDEN,
+                patch(
+                        bob.token(),
+                        item.id(),
+                        Map.of("title", "po", "version", 0)
+                ).getStatusCode()
+        );
+        assertEquals(
+                HttpStatus.NOT_FOUND,
+                revoke(alice.token(), item.id(), bob.id()).getStatusCode()
+        );
     }
 
     @Test
@@ -251,7 +351,9 @@ class ItemIntegrationTest {
                 HttpStatus.BAD_REQUEST,
                 patch(alice.token(), item.id(), Map.of("title", "bez wersji")).getStatusCode()
         );
-        assertEquals(HttpStatus.BAD_REQUEST, create(alice.token(), Map.of("content", "bez tytułu")).getStatusCode());
+        assertEquals(HttpStatus.BAD_REQUEST, create(alice.token(), Map.of(
+                "content", "bez tytułu")).getStatusCode()
+        );
         assertEquals(
                 HttpStatus.BAD_REQUEST,
                 restTemplate.exchange(
@@ -268,9 +370,86 @@ class ItemIntegrationTest {
         Session alice = registerAndLogin(uniqueLogin("alice"));
         UUID missing = UUID.randomUUID();
 
-        assertEquals(HttpStatus.NOT_FOUND, patch(alice.token(), missing, Map.of("title", "x", "version", 0)).getStatusCode());
+        assertEquals(HttpStatus.NOT_FOUND, patch(alice.token(), missing, Map.of(
+                "title", "x", "version", 0)).getStatusCode()
+        );
         assertEquals(HttpStatus.NOT_FOUND, delete(alice.token(), missing).getStatusCode());
         assertEquals(HttpStatus.NOT_FOUND, historyStatus(alice.token(), missing));
+    }
+
+    @RepeatedTest(20)
+    void whenTwoPatchesUseSameVersionThenExactlyOneSucceeds() throws Exception {
+        Session alice = registerAndLogin(uniqueLogin("alice"));
+        ItemBody item = createItem(alice.token(), "pierwsza");
+
+        CountDownLatch start = new CountDownLatch(1);
+        try (ExecutorService pool = Executors.newFixedThreadPool(2)) {
+            try {
+                Future<HttpStatusCode> first = pool.submit(() -> {
+                    start.await();
+                    return patch(
+                            alice.token(), item.id(), Map.of("title", "A", "version", 0)
+                    ).getStatusCode();
+                });
+                Future<HttpStatusCode> second = pool.submit(() -> {
+                    start.await();
+                    return patch(
+                            alice.token(), item.id(), Map.of("title", "B", "version", 0)
+                    ).getStatusCode();
+                });
+                start.countDown();
+                List<HttpStatusCode> statuses = List.of(
+                        first.get(10, TimeUnit.SECONDS),
+                        second.get(10, TimeUnit.SECONDS)
+                );
+                assertEquals(1, statuses.stream().filter(HttpStatus.OK::equals).count());
+                assertEquals(1, statuses.stream().filter(HttpStatus.CONFLICT::equals).count());
+            } finally {
+                pool.shutdownNow();
+            }
+        }
+        assertEquals(1, findInList(alice.token(), item.id()).version());
+    }
+
+    @RepeatedTest(5)
+    void whenTwoFirstSharesRaceThenOneIsCreatedAndOtherIsOkOrConflict() throws Exception {
+        Session alice = registerAndLogin(uniqueLogin("alice"));
+        Session bob = registerAndLogin(uniqueLogin("bob"));
+        ItemBody item = createItem(alice.token(), "wspólna");
+
+        CountDownLatch start = new CountDownLatch(1);
+        try (ExecutorService pool = Executors.newFixedThreadPool(2)) {
+            try {
+                Future<HttpStatusCode> first = pool.submit(() -> {
+                    start.await();
+                    return share(alice.token(), item.id(), bob.id(), "VIEWER").getStatusCode();
+                });
+                Future<HttpStatusCode> second = pool.submit(() -> {
+                    start.await();
+                    return share(alice.token(), item.id(), bob.id(), "VIEWER").getStatusCode();
+                });
+                start.countDown();
+                List<HttpStatusCode> statuses = List.of(
+                        first.get(10, TimeUnit.SECONDS),
+                        second.get(10, TimeUnit.SECONDS)
+                );
+                assertEquals(
+                        1,
+                        statuses.stream().filter(HttpStatus.CREATED::equals).count(),
+                        () -> "unexpected share race outcome: " + statuses
+                );
+                assertEquals(
+                        1,
+                        statuses.stream()
+                                .filter(status -> HttpStatus.OK.equals(status)
+                                        || HttpStatus.CONFLICT.equals(status))
+                                .count(),
+                        () -> "unexpected share race outcome: " + statuses
+                );
+            } finally {
+                pool.shutdownNow();
+            }
+        }
     }
 
     private Session registerAndLogin(String login) {
@@ -293,7 +472,10 @@ class ItemIntegrationTest {
     }
 
     private ItemBody createItem(String token, String title) {
-        ResponseEntity<ItemBody> response = create(token, Map.of("title", title, "content", "treść"));
+        ResponseEntity<ItemBody> response = create(
+                token,
+                Map.of("title", title, "content", "treść")
+        );
         assertEquals(HttpStatus.CREATED, response.getStatusCode());
         assertNotNull(response.getBody());
         return response.getBody();
@@ -348,7 +530,10 @@ class ItemIntegrationTest {
         return restTemplate.exchange(
                 "/items/" + itemId + "/share",
                 HttpMethod.POST,
-                new HttpEntity<>(Map.of("userId", userId.toString(), "role", role), authHeaders(token)),
+                new HttpEntity<>(
+                        Map.of("userId", userId.toString(), "role", role),
+                        authHeaders(token)
+                ),
                 ShareBody.class
         );
     }

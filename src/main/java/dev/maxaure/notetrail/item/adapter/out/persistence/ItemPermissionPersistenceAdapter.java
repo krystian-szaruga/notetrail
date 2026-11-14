@@ -1,7 +1,9 @@
 package dev.maxaure.notetrail.item.adapter.out.persistence;
 
+import dev.maxaure.notetrail.core.error.ConflictException;
 import dev.maxaure.notetrail.item.application.port.out.ItemPermissionRepository;
 import dev.maxaure.notetrail.item.domain.ItemPermission;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.List;
 import java.util.Optional;
@@ -23,7 +25,13 @@ class ItemPermissionPersistenceAdapter implements ItemPermissionRepository {
             existing.get().updateRole(permission.role());
             return repository.saveAndFlush(existing.get()).toDomain();
         }
-        return repository.saveAndFlush(ItemPermissionJpaEntity.from(permission)).toDomain();
+        try {
+            return repository.saveAndFlush(ItemPermissionJpaEntity.from(permission)).toDomain();
+        } catch (DataIntegrityViolationException exception) {
+            // Assumes no surrounding transaction: inside one, the caught exception would
+            // leave it rollback-only and fail later with UnexpectedRollbackException.
+            throw new ConflictException("concurrent share request, retry");
+        }
     }
 
     @Override

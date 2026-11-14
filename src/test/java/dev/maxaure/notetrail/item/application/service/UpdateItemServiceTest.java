@@ -37,7 +37,8 @@ class UpdateItemServiceTest {
     private static final Clock CLOCK = Clock.fixed(UPDATED_AT, ZoneOffset.UTC);
 
     private final ItemRepository itemRepository = mock(ItemRepository.class);
-    private final ItemPermissionRepository permissionRepository = mock(ItemPermissionRepository.class);
+    private final ItemPermissionRepository permissionRepository =
+            mock(ItemPermissionRepository.class);
     private final UpdateItemService service = new UpdateItemService(
             itemRepository,
             new ItemAccessPolicy(permissionRepository),
@@ -49,7 +50,13 @@ class UpdateItemServiceTest {
         givenItem(0);
         givenSavedItem();
 
-        Item updated = service.update(new UpdateItemCommand(ITEM_ID, OWNER_ID, "new title", "new content", 0));
+        Item updated = service.update(new UpdateItemCommand(
+                ITEM_ID,
+                OWNER_ID,
+                "new title",
+                "new content",
+                0
+        ));
 
         assertEquals("new title", updated.title());
         assertEquals("new content", updated.content());
@@ -63,7 +70,13 @@ class UpdateItemServiceTest {
         givenPermission(EDITOR_ID, ItemRole.EDITOR);
         givenSavedItem();
 
-        Item updated = service.update(new UpdateItemCommand(ITEM_ID, EDITOR_ID, "new title", "new content", 0));
+        Item updated = service.update(new UpdateItemCommand(
+                ITEM_ID,
+                EDITOR_ID,
+                "new title",
+                "new content",
+                0
+        ));
 
         assertEquals("new title", updated.title());
         verify(itemRepository).save(any(Item.class));
@@ -76,7 +89,13 @@ class UpdateItemServiceTest {
 
         assertThrows(
                 ForbiddenException.class,
-                () -> service.update(new UpdateItemCommand(ITEM_ID, VIEWER_ID, "new title", "new content", 0))
+                () -> service.update(new UpdateItemCommand(
+                        ITEM_ID,
+                        VIEWER_ID,
+                        "new title",
+                        "new content",
+                        0
+                ))
         );
         verify(itemRepository, never()).save(any(Item.class));
     }
@@ -87,7 +106,13 @@ class UpdateItemServiceTest {
 
         assertThrows(
                 ForbiddenException.class,
-                () -> service.update(new UpdateItemCommand(ITEM_ID, STRANGER_ID, "new title", "new content", 0))
+                () -> service.update(new UpdateItemCommand(
+                        ITEM_ID,
+                        STRANGER_ID,
+                        "new title",
+                        "new content",
+                        0
+                ))
         );
         verify(itemRepository, never()).save(any(Item.class));
     }
@@ -98,7 +123,13 @@ class UpdateItemServiceTest {
 
         VersionConflictException exception = assertThrows(
                 VersionConflictException.class,
-                () -> service.update(new UpdateItemCommand(ITEM_ID, OWNER_ID, "new title", "new content", 1))
+                () -> service.update(new UpdateItemCommand(
+                        ITEM_ID,
+                        OWNER_ID,
+                        "new title",
+                        "new content",
+                        1
+                ))
         );
 
         assertEquals(2, exception.currentVersion());
@@ -111,7 +142,13 @@ class UpdateItemServiceTest {
 
         assertThrows(
                 NotFoundException.class,
-                () -> service.update(new UpdateItemCommand(ITEM_ID, OWNER_ID, "new title", "new content", 0))
+                () -> service.update(new UpdateItemCommand(
+                        ITEM_ID,
+                        OWNER_ID,
+                        "new title",
+                        "new content",
+                        0
+                ))
         );
     }
 
@@ -120,7 +157,13 @@ class UpdateItemServiceTest {
         givenItem(0);
         givenSavedItem();
 
-        Item updated = service.update(new UpdateItemCommand(ITEM_ID, OWNER_ID, "new title", null, 0));
+        Item updated = service.update(new UpdateItemCommand(
+                ITEM_ID,
+                OWNER_ID,
+                "new title",
+                null,
+                0
+        ));
 
         assertEquals("new title", updated.title());
         assertEquals("old content", updated.content());
@@ -131,7 +174,13 @@ class UpdateItemServiceTest {
         givenItem(0);
         givenSavedItem();
 
-        Item updated = service.update(new UpdateItemCommand(ITEM_ID, OWNER_ID, null, "new content", 0));
+        Item updated = service.update(new UpdateItemCommand(
+                ITEM_ID,
+                OWNER_ID,
+                null,
+                "new content",
+                0
+        ));
 
         assertEquals("old title", updated.title());
         assertEquals("new content", updated.content());
@@ -157,6 +206,7 @@ class UpdateItemServiceTest {
     }
 
     private void givenSavedItem() {
-        when(itemRepository.save(any(Item.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(itemRepository.save(any(Item.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
     }
 }

@@ -40,7 +40,8 @@ class ShareItemServiceTest {
     private static final Instant GRANTED_AT = Instant.parse("2026-01-01T11:00:00Z");
 
     private final ItemRepository itemRepository = mock(ItemRepository.class);
-    private final ItemPermissionRepository permissionRepository = mock(ItemPermissionRepository.class);
+    private final ItemPermissionRepository permissionRepository =
+            mock(ItemPermissionRepository.class);
     private final UserLookup userLookup = mock(UserLookup.class);
     private final ShareItemService service = new ShareItemService(
             itemRepository,
@@ -56,7 +57,12 @@ class ShareItemServiceTest {
         when(permissionRepository.save(any(ItemPermission.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        ShareOutcome outcome = service.share(new ShareItemCommand(ITEM_ID, OWNER_ID, TARGET_ID, ItemRole.EDITOR));
+        ShareOutcome outcome = service.share(new ShareItemCommand(
+                ITEM_ID,
+                OWNER_ID,
+                TARGET_ID,
+                ItemRole.EDITOR
+        ));
 
         assertTrue(outcome.created());
         assertEquals(ItemRole.EDITOR, outcome.permission().role());
@@ -74,7 +80,12 @@ class ShareItemServiceTest {
         when(permissionRepository.save(any(ItemPermission.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
-        ShareOutcome outcome = service.share(new ShareItemCommand(ITEM_ID, OWNER_ID, TARGET_ID, ItemRole.EDITOR));
+        ShareOutcome outcome = service.share(new ShareItemCommand(
+                ITEM_ID,
+                OWNER_ID,
+                TARGET_ID,
+                ItemRole.EDITOR
+        ));
 
         assertFalse(outcome.created());
         assertEquals(ItemRole.EDITOR, outcome.permission().role());
@@ -87,7 +98,12 @@ class ShareItemServiceTest {
 
         assertThrows(
                 ValidationException.class,
-                () -> service.share(new ShareItemCommand(ITEM_ID, OWNER_ID, OWNER_ID, ItemRole.VIEWER))
+                () -> service.share(new ShareItemCommand(
+                        ITEM_ID,
+                        OWNER_ID,
+                        OWNER_ID,
+                        ItemRole.VIEWER
+                ))
         );
         verify(permissionRepository, never()).save(any(ItemPermission.class));
     }
@@ -99,7 +115,12 @@ class ShareItemServiceTest {
 
         assertThrows(
                 NotFoundException.class,
-                () -> service.share(new ShareItemCommand(ITEM_ID, OWNER_ID, TARGET_ID, ItemRole.VIEWER))
+                () -> service.share(new ShareItemCommand(
+                        ITEM_ID,
+                        OWNER_ID,
+                        TARGET_ID,
+                        ItemRole.VIEWER
+                ))
         );
         verify(permissionRepository, never()).save(any(ItemPermission.class));
     }
@@ -110,7 +131,12 @@ class ShareItemServiceTest {
 
         assertThrows(
                 ForbiddenException.class,
-                () -> service.share(new ShareItemCommand(ITEM_ID, STRANGER_ID, TARGET_ID, ItemRole.VIEWER))
+                () -> service.share(new ShareItemCommand(
+                        ITEM_ID,
+                        STRANGER_ID,
+                        TARGET_ID,
+                        ItemRole.VIEWER
+                ))
         );
         verifyNoInteractions(userLookup);
         verify(permissionRepository, never()).save(any(ItemPermission.class));
@@ -122,12 +148,26 @@ class ShareItemServiceTest {
 
         assertThrows(
                 NotFoundException.class,
-                () -> service.share(new ShareItemCommand(ITEM_ID, OWNER_ID, TARGET_ID, ItemRole.VIEWER))
+                () -> service.share(new ShareItemCommand(
+                        ITEM_ID,
+                        OWNER_ID,
+                        TARGET_ID,
+                        ItemRole.VIEWER
+                ))
         );
     }
 
     private void givenItem() {
-        Item item = new Item(ITEM_ID, OWNER_ID, "title", "content", 0, false, CREATED_AT, CREATED_AT);
+        Item item = new Item(
+                ITEM_ID,
+                OWNER_ID,
+                "title",
+                "content",
+                0,
+                false,
+                CREATED_AT,
+                CREATED_AT
+        );
         when(itemRepository.findById(ITEM_ID)).thenReturn(Optional.of(item));
     }
 }
