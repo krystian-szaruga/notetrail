@@ -6,6 +6,7 @@ import dev.maxaure.notetrail.user.domain.User;
 import org.springframework.dao.DataIntegrityViolationException;
 
 import java.util.Optional;
+import java.util.UUID;
 
 class UserPersistenceAdapter implements UserRepository {
 
@@ -27,5 +28,10 @@ class UserPersistenceAdapter implements UserRepository {
     @Override
     public Optional<User> findByLogin(String login) {
         return repository.findByLogin(login).map(UserJpaEntity::toDomain);
+    }
+
+    @Override
+    public boolean existsById(UUID userId) {
+        return repository.existsById(userId);
     }
 }
