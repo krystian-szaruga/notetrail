@@ -15,6 +15,7 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v7
@@ -31,6 +32,7 @@ jobs:
 
   compose:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
       - uses: actions/checkout@v7
@@ -62,17 +64,7 @@ jobs:
           test "$code" = "405"
 
       - name: Smoke test
-        run: |
-          status=$(curl -s -o body.json -w '%{http_code}' -X POST http://localhost:8080/register \
-            -H 'Content-Type: application/json' \
-            -d '{"login":"smoke.user","password":"strong-pass"}')
-          test "$status" = "201"
-          grep -q '"login":"smoke.user"' body.json
-
-          status=$(curl -s -o /dev/null -w '%{http_code}' -X POST http://localhost:8080/register \
-            -H 'Content-Type: application/json' \
-            -d '{"login":"smoke.user","password":"strong-pass"}')
-          test "$status" = "409"
+        run: bash ./.github/scripts/smoke-test.sh
 
       - name: Logs
         if: failure()
@@ -82,4 +74,4 @@ jobs:
       - name: Stop stack
         if: always()
         working-directory: infra
-        run: docker compose down -v
+        run: docker compose down -v.
