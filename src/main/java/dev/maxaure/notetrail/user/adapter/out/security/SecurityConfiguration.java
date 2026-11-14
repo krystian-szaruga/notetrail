@@ -13,8 +13,10 @@ import java.time.Duration;
 class SecurityConfiguration {
 
     @Bean
-    PasswordHasher passwordHasher() {
-        return new BCryptPasswordHasher();
+    PasswordHasher passwordHasher(
+            @Value("${notetrail.security.bcrypt-strength:10}") int strength
+    ) {
+        return new BCryptPasswordHasher(strength);
     }
 
     @Bean
