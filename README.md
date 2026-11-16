@@ -185,6 +185,7 @@ If `item` ever has to react to changes in `user` (for example account deletion),
 | Soft delete is audited as `MOD` | Setting `deleted = true` is a normal Hibernate update, so Envers records `MOD` and the content history stays complete | Physical delete (`DEL`), `@SQLDelete` / native updates that bypass Envers |
 | 404 before 403 | The spec requires 404 for missing or deleted items and 403 for foreign ones. The item is loaded first (`deleted = false`), then permissions are checked. This reveals that a foreign item exists, which is accepted because ids are random UUIDs. | Returning 404 for foreign items as well (hides existence, but contradicts the spec) || In-memory rate limiter | Bucket4j token bucket per instance, no external store, configuration via `LOGIN_RATE_LIMIT` | Redis-backed buckets (the task forbids Redis; a single instance needs no shared store) |
 | `ddl-auto=update` instead of Flyway | Envers generates the `*_aud` tables automatically; the task forbids writing them by hand | Flyway with `validate` would require hand-written audit DDL |
+| Re-granting an existing share keeps `grantedAt` | Overwriting a role is an update, not a new grant: only `role` changes and the original grant timestamp is preserved (200) | Inserting a new permission on every share (loses the original grant time and contradicts the update semantics) |
 
 ## License
 
