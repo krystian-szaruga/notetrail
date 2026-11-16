@@ -18,9 +18,8 @@ jobs:
     timeout-minutes: 15
 
     env:
-      LOGGING_LEVEL_ORG_HIBERNATE_SQL: debug
-      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_TRANSACTION: trace
-      LOGGING_LEVEL_ORG_HIBERNATE_TOOL_SCHEMA: debug
+      SPRING_APPLICATION_JSON: >-
+        {"logging":{"level":{"org.hibernate.SQL":"DEBUG","org.hibernate.orm.jdbc.bind":"TRACE","org.springframework.transaction":"TRACE","org.hibernate.tool.schema":"DEBUG"}}}
 
     steps:
       - uses: actions/checkout@v7
