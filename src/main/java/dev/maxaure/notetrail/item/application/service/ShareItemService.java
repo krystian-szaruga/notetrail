@@ -49,7 +49,9 @@ public class ShareItemService implements ShareItemUseCase {
         }
         Optional<ItemPermission> existing = permissionRepository.find(item.id(), command.targetUserId());
         if (existing.isPresent()) {
-            ItemPermission updated = permissionRepository.save(existing.get().withRole(command.role()));
+            ItemPermission updated = permissionRepository.updateRole(
+                    existing.get().withRole(command.role())
+            );
             return new ShareOutcome(updated, false);
         }
         ItemPermission permission = new ItemPermission(
@@ -58,6 +60,6 @@ public class ShareItemService implements ShareItemUseCase {
                 command.role(),
                 clock.instant()
         );
-        return new ShareOutcome(permissionRepository.save(permission), true);
+        return new ShareOutcome(permissionRepository.insert(permission), true);
     }
 }

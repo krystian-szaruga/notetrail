@@ -1,17 +1,16 @@
 package dev.maxaure.notetrail.user.adapter.in.web;
 
+import dev.maxaure.notetrail.MySqlIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.http.*;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.testcontainers.containers.MySQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
+import java.time.Instant;
 import java.util.Map;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -23,12 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
                 "notetrail.security.bcrypt-strength=4"
         }
 )
-@Testcontainers
-class UserIntegrationTest {
-
-    @Container
-    @ServiceConnection
-    static final MySQLContainer<?> MYSQL = new MySQLContainer<>("mysql:8.4");
+class UserIntegrationTest extends MySqlIntegrationTest {
 
     @Autowired
     private TestRestTemplate restTemplate;
@@ -54,6 +48,21 @@ class UserIntegrationTest {
         assertNotEquals("strong-pass", hash);
         assertEquals(60, hash.length());
         assertTrue(hash.matches("^\\$2[aby]\\$\\d{2}\\$.{53}$"));
+    }
+
+    @Test
+    void whenUserRegistersThenResponseContainsIdLoginAndCreatedAt() {
+        ResponseEntity<RegisterResponse> response = restTemplate.postForEntity(
+                "/register",
+                Map.of("login", "shape.check", "password", "strong-pass"),
+                RegisterResponse.class
+        );
+
+        assertEquals(HttpStatus.CREATED, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertNotNull(response.getBody().id());
+        assertEquals("shape.check", response.getBody().login());
+        assertNotNull(Instant.parse(response.getBody().createdAt()));
     }
 
     @Test
@@ -179,4 +188,6 @@ class UserIntegrationTest {
     }
 
     private record TokenResponse(String token, long expiresIn) {}
+
+    private record RegisterResponse(UUID id, String login, String createdAt) {}
 }
