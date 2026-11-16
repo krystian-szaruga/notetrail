@@ -1,9 +1,13 @@
 package dev.maxaure.notetrail.item.adapter.in.web;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.*;
 
+import java.util.LinkedHashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -73,12 +77,35 @@ class ItemCrudIntegrationTest extends ItemApiTestSupport {
         Session alice = registerAndLogin(uniqueLogin("alice"));
         ItemBody item = createItem(alice.token(), "tytul");
 
-        ItemBody body = patch(
+        ItemPatchBody body = patch(
                 alice.token(), item.id(), Map.of("title", "inny", "version", 0)).getBody();
 
         assertNotNull(body);
         assertEquals("inny", body.title());
         assertEquals("treść", body.content());
+    }
+
+    @Test
+    void whenItemIsPatchedThenResponseHasExactlyTheContractFields() throws Exception {
+        Session alice = registerAndLogin(uniqueLogin("alice"));
+        ItemBody item = createItem(alice.token(), "tytuł");
+
+        String json = restTemplate.exchange(
+                "/items/" + item.id(),
+                HttpMethod.PATCH,
+                new HttpEntity<>(
+                        Map.of("title", "inny", "version", 0),
+                        authHeaders(alice.token())
+                ),
+                String.class
+        ).getBody();
+        assertNotNull(json);
+
+        JsonNode body = new ObjectMapper().readTree(json);
+        Set<String> fields = new LinkedHashSet<>();
+        body.fieldNames().forEachRemaining(fields::add);
+
+        assertEquals(Set.of("id", "title", "content", "version", "updatedAt"), fields);
     }
 
     // ---------------------------------------------------------------

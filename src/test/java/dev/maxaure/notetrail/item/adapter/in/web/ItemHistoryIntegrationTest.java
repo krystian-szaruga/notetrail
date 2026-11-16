@@ -15,7 +15,7 @@ class ItemHistoryIntegrationTest extends ItemApiTestSupport {
         Session alice = registerAndLogin(uniqueLogin("alice"));
         ItemBody item = createItem(alice.token(), "pierwsza");
 
-        ItemBody firstEdit = patch(
+        ItemPatchBody firstEdit = patch(
                 alice.token(),
                 item.id(),
                 Map.of("title", "druga", "version", 0)
@@ -23,7 +23,7 @@ class ItemHistoryIntegrationTest extends ItemApiTestSupport {
         assertNotNull(firstEdit);
         assertEquals(1, firstEdit.version());
 
-        ItemBody secondEdit = patch(alice.token(), item.id(), Map.of(
+        ItemPatchBody secondEdit = patch(alice.token(), item.id(), Map.of(
                 "content", "nowa treść",
                 "version", firstEdit.version()
         )).getBody();

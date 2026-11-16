@@ -78,7 +78,7 @@ class ItemController {
     }
 
     @PatchMapping("/{id}")
-    ItemResponse update(
+    ItemPatchResponse update(
             @PathVariable("id") UUID id,
             @Valid @RequestBody UpdateItemRequest request,
             AuthenticatedUser user
@@ -90,7 +90,7 @@ class ItemController {
                 request.content(),
                 request.version()
         ));
-        return ItemResponse.from(item);
+        return ItemPatchResponse.from(item);
     }
 
     @DeleteMapping("/{id}")

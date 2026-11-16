@@ -65,12 +65,12 @@ abstract class ItemApiTestSupport extends MySqlIntegrationTest {
         );
     }
 
-    protected ResponseEntity<ItemBody> patch(String token, UUID itemId, Map<String, Object> body) {
+    protected ResponseEntity<ItemPatchBody> patch(String token, UUID itemId, Map<String, Object> body) {
         return restTemplate.exchange(
                 "/items/" + itemId,
                 HttpMethod.PATCH,
                 new HttpEntity<>(body, authHeaders(token)),
-                ItemBody.class
+                ItemPatchBody.class
         );
     }
 
@@ -180,6 +180,15 @@ abstract class ItemApiTestSupport extends MySqlIntegrationTest {
             int version,
             UUID ownerId,
             String createdAt,
+            String updatedAt
+    ) {
+    }
+
+    protected record ItemPatchBody(
+            UUID id,
+            String title,
+            String content,
+            int version,
             String updatedAt
     ) {
     }
