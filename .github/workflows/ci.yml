@@ -17,10 +17,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
-    env:
-      SPRING_APPLICATION_JSON: >-
-        {"logging":{"level":{"org.hibernate.SQL":"DEBUG","org.hibernate.orm.jdbc.bind":"TRACE","org.springframework.transaction":"TRACE","org.hibernate.tool.schema":"DEBUG","org.springframework.web.servlet.DispatcherServlet":"DEBUG"}}}
-
     steps:
       - uses: actions/checkout@v7
 
