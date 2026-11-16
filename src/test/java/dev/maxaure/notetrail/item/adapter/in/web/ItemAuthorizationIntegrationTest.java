@@ -1,11 +1,23 @@
 package dev.maxaure.notetrail.item.adapter.in.web;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
-import org.springframework.http.*;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
+import java.util.Base64;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ItemAuthorizationIntegrationTest extends ItemApiTestSupport {
 
@@ -166,4 +178,44 @@ class ItemAuthorizationIntegrationTest extends ItemApiTestSupport {
         assertEquals(HttpStatus.FORBIDDEN, delete(bob.token(), item.id()).getStatusCode());
         assertTrue(listContains(alice.token(), item.id()));
     }
+
+    @Test
+    void whenTokenIsExpiredThenUnauthorizedIsReturned() throws Exception {
+        Session alice = registerAndLogin(uniqueLogin("alice"));
+        String stillValid = resignedWithExpiry(alice.token(), Instant.now().plus(1, ChronoUnit.HOURS));
+        String expired = resignedWithExpiry(alice.token(), Instant.now().minus(1, ChronoUnit.HOURS));
+
+        assertEquals(HttpStatus.OK, listStatus(stillValid));
+        assertEquals(HttpStatus.UNAUTHORIZED, listStatus(expired));
+    }
+
+    private HttpStatusCode listStatus(String token) {
+        return restTemplate.exchange(
+                "/items",
+                HttpMethod.GET,
+                new HttpEntity<>(authHeaders(token)),
+                String.class
+        ).getStatusCode();
+    }
+
+    private static String resignedWithExpiry(String token, Instant expiry) throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        String[] parts = token.split("\\.");
+        Base64.Encoder encoder = Base64.getUrlEncoder().withoutPadding();
+
+        Map<String, Object> claims = mapper.readValue(
+                Base64.getUrlDecoder().decode(parts[1]),
+                new TypeReference<>() {}
+        );
+        claims.put("exp", expiry.getEpochSecond());
+
+        String unsigned = parts[0] + "." + encoder.encodeToString(mapper.writeValueAsBytes(claims));
+        Mac mac = Mac.getInstance("HmacSHA256");
+        mac.init(new SecretKeySpec(JWT_SECRET.getBytes(StandardCharsets.UTF_8), "HmacSHA256"));
+        byte[] signature = mac.doFinal(unsigned.getBytes(StandardCharsets.UTF_8));
+        return unsigned + "." + encoder.encodeToString(signature);
+    }
+
+    private static final String JWT_SECRET = "test-secret-test-secret-test-secret-32";
+
 }
