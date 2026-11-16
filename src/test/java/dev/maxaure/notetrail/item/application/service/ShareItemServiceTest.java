@@ -54,7 +54,7 @@ class ShareItemServiceTest {
     void whenOwnerSharesWithNewUserThenPermissionIsCreated() {
         givenItem();
         when(userLookup.existsById(TARGET_ID)).thenReturn(true);
-        when(permissionRepository.save(any(ItemPermission.class)))
+        when(permissionRepository.insert(any(ItemPermission.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         ShareOutcome outcome = service.share(new ShareItemCommand(
@@ -67,7 +67,7 @@ class ShareItemServiceTest {
         assertTrue(outcome.created());
         assertEquals(ItemRole.EDITOR, outcome.permission().role());
         assertEquals(GRANTED_AT, outcome.permission().grantedAt());
-        verify(permissionRepository).save(any(ItemPermission.class));
+        verify(permissionRepository).insert(any(ItemPermission.class));
     }
 
     @Test
@@ -77,7 +77,7 @@ class ShareItemServiceTest {
         when(permissionRepository.find(ITEM_ID, TARGET_ID)).thenReturn(Optional.of(
                 new ItemPermission(ITEM_ID, TARGET_ID, ItemRole.VIEWER, CREATED_AT)
         ));
-        when(permissionRepository.save(any(ItemPermission.class)))
+        when(permissionRepository.updateRole(any(ItemPermission.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
 
         ShareOutcome outcome = service.share(new ShareItemCommand(
@@ -105,7 +105,8 @@ class ShareItemServiceTest {
                         ItemRole.VIEWER
                 ))
         );
-        verify(permissionRepository, never()).save(any(ItemPermission.class));
+        verify(permissionRepository, never()).insert(any(ItemPermission.class));
+        verify(permissionRepository, never()).updateRole(any(ItemPermission.class));
     }
 
     @Test
@@ -122,7 +123,8 @@ class ShareItemServiceTest {
                         ItemRole.VIEWER
                 ))
         );
-        verify(permissionRepository, never()).save(any(ItemPermission.class));
+        verify(permissionRepository, never()).insert(any(ItemPermission.class));
+        verify(permissionRepository, never()).updateRole(any(ItemPermission.class));
     }
 
     @Test
@@ -139,7 +141,8 @@ class ShareItemServiceTest {
                 ))
         );
         verifyNoInteractions(userLookup);
-        verify(permissionRepository, never()).save(any(ItemPermission.class));
+        verify(permissionRepository, never()).insert(any(ItemPermission.class));
+        verify(permissionRepository, never()).updateRole(any(ItemPermission.class));
     }
 
     @Test

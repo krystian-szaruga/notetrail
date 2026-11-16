@@ -18,13 +18,7 @@ class ItemPermissionPersistenceAdapter implements ItemPermissionRepository {
     }
 
     @Override
-    public ItemPermission save(ItemPermission permission) {
-        Optional<ItemPermissionJpaEntity> existing =
-                repository.findByItemIdAndUserId(permission.itemId(), permission.userId());
-        if (existing.isPresent()) {
-            existing.get().updateRole(permission.role());
-            return repository.saveAndFlush(existing.get()).toDomain();
-        }
+    public ItemPermission insert(ItemPermission permission) {
         try {
             return repository.saveAndFlush(ItemPermissionJpaEntity.from(permission)).toDomain();
         } catch (DataIntegrityViolationException exception) {
@@ -32,6 +26,15 @@ class ItemPermissionPersistenceAdapter implements ItemPermissionRepository {
             // leave it rollback-only and fail later with UnexpectedRollbackException.
             throw new ConflictException("concurrent share request, retry");
         }
+    }
+
+    @Override
+    public ItemPermission updateRole(ItemPermission permission) {
+        ItemPermissionJpaEntity existing = repository
+                .findByItemIdAndUserId(permission.itemId(), permission.userId())
+                .orElseThrow(() -> new ConflictException("concurrent revoke request, retry"));
+        existing.updateRole(permission.role());
+        return repository.saveAndFlush(existing).toDomain();
     }
 
     @Override

@@ -8,7 +8,9 @@ import java.util.UUID;
 
 public interface ItemPermissionRepository {
 
-    ItemPermission save(ItemPermission permission);
+    ItemPermission insert(ItemPermission permission);
+
+    ItemPermission updateRole(ItemPermission permission);
 
     Optional<ItemPermission> find(UUID itemId, UUID userId);
 
