@@ -17,6 +17,11 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
+    env:
+      LOGGING_LEVEL_ORG_HIBERNATE_SQL: debug
+      LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_TRANSACTION: trace
+      LOGGING_LEVEL_ORG_HIBERNATE_TOOL_SCHEMA: debug
+
     steps:
       - uses: actions/checkout@v7
 

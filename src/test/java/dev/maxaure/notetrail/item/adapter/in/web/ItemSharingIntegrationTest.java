@@ -124,7 +124,7 @@ class ItemSharingIntegrationTest extends ItemApiTestSupport {
                 share(alice.token(), UUID.randomUUID(), bob.id(), "VIEWER").getStatusCode());
     }
 
-    @RepeatedTest(5)
+    @RepeatedTest(20)
     void whenTwoFirstSharesRaceThenOneIsCreatedAndOtherIsOkOrConflict() throws Exception {
         Session alice = registerAndLogin(uniqueLogin("alice"));
         Session bob = registerAndLogin(uniqueLogin("bob"));
