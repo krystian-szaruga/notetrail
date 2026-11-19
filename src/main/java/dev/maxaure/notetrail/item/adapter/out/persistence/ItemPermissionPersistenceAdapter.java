@@ -50,7 +50,7 @@ class ItemPermissionPersistenceAdapter implements ItemPermissionRepository {
     }
 
     @Override
-    public void delete(UUID itemId, UUID userId) {
-        repository.deleteByItemIdAndUserId(itemId, userId);
+    public boolean delete(UUID itemId, UUID userId) {
+        return repository.deleteByItemIdAndUserId(itemId, userId) > 0;
     }
 }

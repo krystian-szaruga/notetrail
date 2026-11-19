@@ -16,5 +16,5 @@ public interface ItemPermissionRepository {
 
     List<ItemPermission> findAllByUserId(UUID userId);
 
-    void delete(UUID itemId, UUID userId);
+    boolean delete(UUID itemId, UUID userId);
 }

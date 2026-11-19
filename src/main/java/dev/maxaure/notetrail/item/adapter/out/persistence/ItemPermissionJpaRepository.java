@@ -1,6 +1,9 @@
 package dev.maxaure.notetrail.item.adapter.out.persistence;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -14,5 +17,7 @@ interface ItemPermissionJpaRepository extends JpaRepository<ItemPermissionJpaEnt
     List<ItemPermissionJpaEntity> findAllByUserId(UUID userId);
 
     @Transactional
-    long deleteByItemIdAndUserId(UUID itemId, UUID userId);
+    @Modifying
+    @Query("delete from ItemPermissionJpaEntity p where p.itemId = :itemId and p.userId = :userId")
+    int deleteByItemIdAndUserId(@Param("itemId") UUID itemId, @Param("userId") UUID userId);
 }

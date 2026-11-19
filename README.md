@@ -84,8 +84,12 @@ All endpoints except `/register` and `/login` require `Authorization: Bearer <to
 | `PATCH` | `/items/{id}` | Edit title/content with `version` (200, 400, 403, 404, 409 with current `version`) |
 | `DELETE` | `/items/{id}` | Soft delete, owner only (204, 403, 404) |
 | `GET` | `/items/{id}/history` | Envers revision history (200, 403, 404) |
-| `POST` | `/items/{id}/share` | Grant `VIEWER`/`EDITOR`, owner only (201 new, 200 updated, 400, 403, 404, 409 when two first shares for the same user race) |
+| `POST` | `/items/{id}/share` | Grant `VIEWER`/`EDITOR`, owner only (201 new, 200 updated, 400, 403, 404, 409 on concurrent race) |
 | `DELETE` | `/items/{id}/share/{userId}` | Revoke access, owner only (204, 403, 404) |
+
+`POST /items/{id}/share` returns 409 when a concurrent share or revoke wins the race; a concurrent first share may also return 200 if the other request committed before this one read the permission.
+
+`DELETE /items/{id}` can also return 409 when the item is modified or deleted concurrently between the read and the save (optimistic locking); retry against the current state.
 
 ## Configuration
 
@@ -163,13 +167,15 @@ CI (GitHub Actions) runs `./gradlew build` on JDK 21 and, in a separate `compose
                                            └─────────────┘
 ```
 
+`item` uses `security.CurrentUser` in its Envers revision listener, and `user` receives the `SecretKey` bean from `security`; `security` never depends on either feature module.
+
 `bootstrap` (root package) is the only place that connects the modules: it adapts `item`'s `UserLookup` port to `user`'s `FindUserUseCase`. Neither module imports the other; ArchUnit enforces this.
 
 If `item` ever has to react to changes in `user` (for example account deletion), the next step would be application/domain events backed by a message bus, instead of widening `UserLookup` with more synchronous calls. The current scope does not need it.
 
 - Hexagonal per feature; `domain` and `application` are framework-free.
 - `item` never imports `user`; the only link is the `UserLookup` port wired in `bootstrap`.
-- `security` verifies JWTs and depends only on `core`; ArchUnit enforces all module boundaries.
+- `security` is a shared kernel: it verifies JWTs and depends only on `core`; feature modules may use its `CurrentUser` context and the `SecretKey` bean. ArchUnit enforces the feature-module and layer boundaries; the shared-kernel dependency is deliberate.
 - `ItemJpaEntity` is `@Audited`, uses `@Version` for optimistic locking and `deleted` for soft delete; history is read through `AuditReader`.
 
 ## Design decisions
@@ -178,11 +184,11 @@ If `item` ever has to react to changes in `user` (for example account deletion),
 | --- | --- | --- |
 | Hexagonal, organized by feature | Core rules stay framework-free, unit tests need no context | Layer-first packages |
 | JJWT 0.13 for tokens | Signing + `exp` validation in a few lines | Nimbus (needs JWK/JWE), Spring Security OAuth2 |
-| Validation: DTO presence, domain invariants, service password policy | One home per rule | All validation in the DTO |
-| No explicit transaction boundary in services | Every operation ends with a single write, so the repository call provides the transaction. A check-then-write race is caught by `@Version` (409) and `unique(item_id, user_id)`. | A custom `TransactionRunner` port with a `TransactionTemplate` adapter adds an abstraction that buys nothing while every business operation is a single write. |
-| Concurrent first share returns 409 | Two simultaneous first shares for the same user both see no permission, and the second insert hits `unique(item_id, user_id)`. The adapter maps the violation to `ConflictException` (409, "retry"), and the `created` flag comes from the insert result itself, never from the earlier read. This relies on the share flow having no surrounding transaction (see the previous row). | Re-reading the row and updating its role, which would turn the loser into a 200 but adds code the spec does not require |
+| Validation: DTO presence, domain invariants, service password policy | DTO mirrors the domain limits for an early 400; the domain remains the source of truth. | All validation in the DTO |
+| No explicit transaction boundary in services | Every operation ends with a single write, so the repository call provides the transaction. `@Version` guards item updates (409), `unique(item_id, user_id)` guards concurrent first shares (409), and a share that races a revoke returns 409 when `updateRole` no longer finds the permission. | A custom `TransactionRunner` port with a `TransactionTemplate` adapter adds an abstraction that buys nothing while every business operation is a single write. |
+| Concurrent first share returns 200 or 409 | Two simultaneous first shares for the same user both see no permission. The insert that commits first creates the permission (201); the other either hits `unique(item_id, user_id)` and returns 409 ("retry"), or reads after the first commit and updates the existing row with 200. Both outcomes are valid; `created` comes from the insert result, never from the earlier read. This relies on the share flow having no surrounding transaction (see the previous row). | Forcing a single status with an explicit lock or retry loop, which adds code the spec does not require |
 | Explicit `deleted = false` in item queries | `@Query` JPQL in `ItemJpaRepository` keeps the soft-delete filter visible in the code | Derived method names (`...AndDeletedFalse`) hide the filter behind name parsing |
-| Soft delete is audited as `MOD` | Setting `deleted = true` is a normal Hibernate update, so Envers records `MOD` and the content history stays complete | Physical delete (`DEL`), `@SQLDelete` / native updates that bypass Envers |
+| Soft delete is audited as `MOD` | Setting `deleted = true` is a normal Hibernate update, so Envers records `MOD` and `items_aud` keeps every content revision, including the final state; the history endpoint still returns 404 for deleted items. | Physical delete (`DEL`), `@SQLDelete` / native updates that bypass Envers |
 | 404 before 403 | The spec requires 404 for missing or deleted items and 403 for foreign ones. The item is loaded first (`deleted = false`), then permissions are checked. This reveals that a foreign item exists, which is accepted because ids are random UUIDs. | Returning 404 for foreign items as well (hides existence, but contradicts the spec) |
 | In-memory rate limiter | Bucket4j token bucket per instance, no external store, configuration via `LOGIN_RATE_LIMIT` | Redis-backed buckets (the task forbids Redis; a single instance needs no shared store) |
 | `ddl-auto=update` instead of Flyway | Envers generates the `*_aud` tables automatically; the task forbids writing them by hand | Flyway with `validate` would require hand-written audit DDL |

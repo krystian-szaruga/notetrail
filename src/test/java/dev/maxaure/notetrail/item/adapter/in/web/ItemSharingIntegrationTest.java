@@ -197,6 +197,35 @@ class ItemSharingIntegrationTest extends ItemApiTestSupport {
     }
 
     @Test
+    void whenTwoRevokesRaceThenOneIsNoContentAndOtherIsNotFound() throws Exception {
+        Session alice = registerAndLogin(uniqueLogin("alice"));
+        Session bob = registerAndLogin(uniqueLogin("bob"));
+        ItemBody item = createItem(alice.token(), "wspólna");
+        share(alice.token(), item.id(), bob.id(), "EDITOR");
+
+        CountDownLatch start = new CountDownLatch(1);
+        try (ExecutorService pool = Executors.newFixedThreadPool(2)) {
+            Future<HttpStatusCode> first = pool.submit(() -> {
+                start.await();
+                return revoke(alice.token(), item.id(), bob.id()).getStatusCode();
+            });
+            Future<HttpStatusCode> second = pool.submit(() -> {
+                start.await();
+                return revoke(alice.token(), item.id(), bob.id()).getStatusCode();
+            });
+            start.countDown();
+
+            List<HttpStatusCode> statuses = List.of(
+                    first.get(10, TimeUnit.SECONDS),
+                    second.get(10, TimeUnit.SECONDS)
+            );
+
+            assertEquals(1, statuses.stream().filter(HttpStatus.NO_CONTENT::equals).count());
+            assertEquals(1, statuses.stream().filter(HttpStatus.NOT_FOUND::equals).count());
+        }
+    }
+
+    @Test
     void whenRevokedItemDoesNotExistThenNotFoundIsReturned() {
         Session alice = registerAndLogin(uniqueLogin("alice"));
         Session bob = registerAndLogin(uniqueLogin("bob"));

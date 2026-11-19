@@ -26,8 +26,8 @@ public class RevokeShareService implements RevokeShareUseCase {
         if (!item.isOwnedBy(requesterId)) {
             throw new ForbiddenException("only owner can revoke item access");
         }
-        permissionRepository.find(item.id(), targetUserId)
-                .orElseThrow(() -> new NotFoundException("permission not found"));
-        permissionRepository.delete(item.id(), targetUserId);
+        if (!permissionRepository.delete(item.id(), targetUserId)) {
+            throw new NotFoundException("permission not found");
+        }
     }
 }
