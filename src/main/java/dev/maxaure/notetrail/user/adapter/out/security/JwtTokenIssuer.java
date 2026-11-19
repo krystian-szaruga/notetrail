@@ -31,7 +31,7 @@ class JwtTokenIssuer implements TokenIssuer {
                 .claim("login", user.login())
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plus(ttl)))
-                .signWith(key)
+                .signWith(key, Jwts.SIG.HS256)
                 .compact();
         return new IssuedToken(token, ttl.toSeconds());
     }
