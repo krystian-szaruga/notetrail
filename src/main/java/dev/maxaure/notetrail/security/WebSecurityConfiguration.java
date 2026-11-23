@@ -1,6 +1,5 @@
 package dev.maxaure.notetrail.security;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.jsonwebtoken.security.Keys;
 import org.jspecify.annotations.NonNull;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,6 +9,7 @@ import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
 import org.springframework.web.method.support.HandlerMethodArgumentResolver;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+import tools.jackson.databind.json.JsonMapper;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -32,7 +32,7 @@ class WebSecurityConfiguration {
     @Bean
     FilterRegistrationBean<JwtAuthenticationFilter> jwtAuthenticationFilter(
             JwtTokenVerifier verifier,
-            ObjectMapper objectMapper
+            JsonMapper objectMapper
     ) {
         var registration = new FilterRegistrationBean<>(
                 new JwtAuthenticationFilter(verifier, objectMapper)

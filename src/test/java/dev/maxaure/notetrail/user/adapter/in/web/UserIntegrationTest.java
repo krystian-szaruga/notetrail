@@ -3,8 +3,9 @@ package dev.maxaure.notetrail.user.adapter.in.web;
 import dev.maxaure.notetrail.MySqlIntegrationTest;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.resttestclient.TestRestTemplate;
+import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.*;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -22,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.*;
                 "notetrail.security.bcrypt-strength=4"
         }
 )
+@AutoConfigureTestRestTemplate
 class UserIntegrationTest extends MySqlIntegrationTest {
 
     @Autowired
