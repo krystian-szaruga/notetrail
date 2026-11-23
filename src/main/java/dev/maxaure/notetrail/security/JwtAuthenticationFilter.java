@@ -1,6 +1,6 @@
 package dev.maxaure.notetrail.security;
 
-import tools.jackson.databind.json.JsonMapper;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import dev.maxaure.notetrail.core.error.UnauthorizedException;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -23,9 +23,9 @@ class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final Set<String> PUBLIC_PATHS = Set.of("/register", "/login");
 
     private final JwtTokenVerifier verifier;
-    private final JsonMapper objectMapper;
+    private final ObjectMapper objectMapper;
 
-    JwtAuthenticationFilter(JwtTokenVerifier verifier, JsonMapper objectMapper) {
+    JwtAuthenticationFilter(JwtTokenVerifier verifier, ObjectMapper objectMapper) {
         this.verifier = verifier;
         this.objectMapper = objectMapper;
     }
