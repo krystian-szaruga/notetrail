@@ -1,12 +1,12 @@
 package dev.maxaure.notetrail.item.adapter.in.web;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
-import org.testcontainers.shaded.com.fasterxml.jackson.core.type.TypeReference;
-import org.testcontainers.shaded.com.fasterxml.jackson.databind.json.JsonMapper;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -199,7 +199,7 @@ class ItemAuthorizationIntegrationTest extends ItemApiTestSupport {
     }
 
     private static String resignedWithExpiry(String token, Instant expiry) throws Exception {
-        JsonMapper mapper = new JsonMapper();
+        ObjectMapper mapper = new ObjectMapper();
         String[] parts = token.split("\\.");
         Base64.Encoder encoder = Base64.getUrlEncoder().withoutPadding();
 
