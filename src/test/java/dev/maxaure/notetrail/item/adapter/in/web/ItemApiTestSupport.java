@@ -2,8 +2,9 @@ package dev.maxaure.notetrail.item.adapter.in.web;
 
 import dev.maxaure.notetrail.MySqlIntegrationTest;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.resttestclient.TestRestTemplate;
+import org.springframework.boot.resttestclient.autoconfigure.AutoConfigureTestRestTemplate;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.http.*;
 
 import java.util.Arrays;
@@ -20,6 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
                 "notetrail.security.bcrypt-strength=4"
         }
 )
+@AutoConfigureTestRestTemplate
 abstract class ItemApiTestSupport extends MySqlIntegrationTest {
 
     protected static final String PASSWORD = "strong-pass";
@@ -177,7 +179,7 @@ abstract class ItemApiTestSupport extends MySqlIntegrationTest {
             UUID id,
             String title,
             String content,
-            int version,
+            Integer version,
             UUID ownerId,
             String createdAt,
             String updatedAt
@@ -188,7 +190,7 @@ abstract class ItemApiTestSupport extends MySqlIntegrationTest {
             UUID id,
             String title,
             String content,
-            int version,
+            Integer version,
             String updatedAt
     ) {
     }

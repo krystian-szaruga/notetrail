@@ -1,7 +1,7 @@
 package dev.maxaure.notetrail.item.adapter.in.web;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.json.JsonMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.*;
 
@@ -101,9 +101,9 @@ class ItemCrudIntegrationTest extends ItemApiTestSupport {
         ).getBody();
         assertNotNull(json);
 
-        JsonNode body = new ObjectMapper().readTree(json);
-        Set<String> fields = new LinkedHashSet<>();
-        body.fieldNames().forEachRemaining(fields::add);
+        JsonNode body = JsonMapper.builder().build().readTree(json);
+        Set<String> fields = new LinkedHashSet<>(body.propertyNames());
+
 
         assertEquals(Set.of("id", "title", "content", "version", "updatedAt"), fields);
     }
